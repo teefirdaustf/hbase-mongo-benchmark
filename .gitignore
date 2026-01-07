@@ -1,0 +1,25 @@
+# Data files (user-provided)
+data/*.parquet
+data/*.csv
+
+# Benchmark results
+results/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

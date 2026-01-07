@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  # MongoDB Service
+  mongodb:
+    image: mongo:7.0
+    container_name: benchmark-mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      - MONGO_INITDB_DATABASE=benchmark
+    networks:
+      - benchmark-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+
+  # HBase Service (standalone with embedded ZooKeeper)
+  hbase:
+    build:
+      context: ./hbase
+      dockerfile: Dockerfile
+    container_name: benchmark-hbase
+    hostname: hbase
+    ports:
+      - "2181:2181"    # ZooKeeper (embedded)
+      - "8080:8080"    # REST API
+      - "9090:9090"    # Thrift API
+      - "16000:16000"  # Master port
+      - "16010:16010"  # Master Web UI
+      - "16020:16020"  # RegionServer port
+      - "16030:16030"  # RegionServer Web UI
+    volumes:
+      - hbase_data:/data
+    networks:
+      - benchmark-net
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 9090 || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '2'
+
+networks:
+  benchmark-net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  hbase_data:

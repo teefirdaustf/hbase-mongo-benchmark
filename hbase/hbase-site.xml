@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <!-- HBase root directory -->
+  <property>
+    <name>hbase.rootdir</name>
+    <value>file:///data/hbase</value>
+  </property>
+
+  <!-- Embedded ZooKeeper (standalone mode) -->
+  <property>
+    <name>hbase.zookeeper.quorum</name>
+    <value>localhost</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.clientPort</name>
+    <value>2181</value>
+  </property>
+  <property>
+    <name>hbase.zookeeper.property.dataDir</name>
+    <value>/data/zookeeper</value>
+  </property>
+
+  <!-- Cluster mode: standalone -->
+  <property>
+    <name>hbase.cluster.distributed</name>
+    <value>false</value>
+  </property>
+
+  <!-- Tmp directory -->
+  <property>
+    <name>hbase.tmp.dir</name>
+    <value>/data/hbase-tmp</value>
+  </property>
+
+  <!-- Unsafe stream capability for local filesystem -->
+  <property>
+    <name>hbase.unsafe.stream.capability.enforce</name>
+    <value>false</value>
+  </property>
+
+  <!-- Performance tuning -->
+  <property>
+    <name>hbase.regionserver.handler.count</name>
+    <value>30</value>
+  </property>
+  <property>
+    <name>hbase.hregion.memstore.flush.size</name>
+    <value>134217728</value>
+  </property>
+
+  <!-- Thrift server settings -->
+  <property>
+    <name>hbase.thrift.minWorkerThreads</name>
+    <value>16</value>
+  </property>
+  <property>
+    <name>hbase.thrift.maxWorkerThreads</name>
+    <value>100</value>
+  </property>
+
+  <!-- REST server settings -->
+  <property>
+    <name>hbase.rest.threads.min</name>
+    <value>2</value>
+  </property>
+  <property>
+    <name>hbase.rest.threads.max</name>
+    <value>100</value>
+  </property>
+</configuration>
