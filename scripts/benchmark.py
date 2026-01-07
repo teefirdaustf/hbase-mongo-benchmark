@@ -363,11 +363,12 @@ def print_results(results: list[BenchmarkResult]):
 
 
 def save_results(results: list[BenchmarkResult]):
-    """Save results to JSON file."""
+    """Save results to JSON and CSV files."""
     Path(RESULTS_DIR).mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"{RESULTS_DIR}/benchmark_{timestamp}.json"
+    json_filename = f"{RESULTS_DIR}/benchmark_{timestamp}.json"
+    csv_filename = f"{RESULTS_DIR}/benchmark_{timestamp}.csv"
 
     output = {
         "timestamp": timestamp,
@@ -380,11 +381,18 @@ def save_results(results: list[BenchmarkResult]):
         "results": [r.to_dict() for r in results]
     }
 
-    with open(filename, "w") as f:
+    # Save JSON
+    with open(json_filename, "w") as f:
         json.dump(output, f, indent=2)
 
-    print(f"\nResults saved to: {filename}")
-    return filename
+    # Save CSV
+    results_df = pd.DataFrame([r.to_dict() for r in results])
+    results_df.to_csv(csv_filename, index=False)
+
+    print(f"\nResults saved to:")
+    print(f"  JSON: {json_filename}")
+    print(f"  CSV:  {csv_filename}")
+    return json_filename, csv_filename
 
 
 def main():

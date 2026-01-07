@@ -6,10 +6,12 @@ Analyze benchmark results and generate comparison charts.
 import os
 import sys
 import json
+import csv
 from pathlib import Path
 from datetime import datetime
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 from tabulate import tabulate
 
@@ -209,6 +211,86 @@ def create_throughput_chart(results: list[dict], output_path: str):
     print(f"Throughput chart saved to: {output_path}")
 
 
+def save_comparison_csv(results: list[dict], output_path: str):
+    """Save detailed comparison analysis to CSV."""
+    rows = []
+
+    # Group results by test
+    tests = {}
+    for r in results:
+        test_name = r["test_name"]
+        if test_name not in tests:
+            tests[test_name] = {}
+        tests[test_name][r["database"]] = r
+
+    for test_name, dbs in tests.items():
+        mongo = dbs.get("MongoDB", {})
+        hbase = dbs.get("HBase", {})
+
+        metrics = [
+            ("p50_ms", "p50 (ms)"),
+            ("p95_ms", "p95 (ms)"),
+            ("p99_ms", "p99 (ms)"),
+            ("mean_ms", "Mean (ms)"),
+            ("std_ms", "Std Dev (ms)"),
+            ("min_ms", "Min (ms)"),
+            ("max_ms", "Max (ms)"),
+            ("throughput_ops", "Throughput (ops/s)")
+        ]
+
+        for metric_key, metric_name in metrics:
+            mongo_val = mongo.get(metric_key, None)
+            hbase_val = hbase.get(metric_key, None)
+
+            # Determine winner
+            winner = ""
+            diff_pct = ""
+
+            if mongo_val is not None and hbase_val is not None:
+                if metric_key == "throughput_ops":
+                    # Higher is better
+                    if mongo_val > hbase_val:
+                        winner = "MongoDB"
+                        diff_pct = ((mongo_val - hbase_val) / hbase_val * 100) if hbase_val != 0 else 0
+                    elif hbase_val > mongo_val:
+                        winner = "HBase"
+                        diff_pct = ((hbase_val - mongo_val) / mongo_val * 100) if mongo_val != 0 else 0
+                    else:
+                        winner = "Tie"
+                        diff_pct = 0
+                else:
+                    # Lower is better (latency)
+                    if mongo_val < hbase_val:
+                        winner = "MongoDB"
+                        diff_pct = -((hbase_val - mongo_val) / hbase_val * 100) if hbase_val != 0 else 0
+                    elif hbase_val < mongo_val:
+                        winner = "HBase"
+                        diff_pct = -((mongo_val - hbase_val) / mongo_val * 100) if mongo_val != 0 else 0
+                    else:
+                        winner = "Tie"
+                        diff_pct = 0
+
+            rows.append({
+                "test_name": test_name,
+                "metric": metric_name,
+                "mongodb_value": mongo_val,
+                "hbase_value": hbase_val,
+                "winner": winner,
+                "difference_pct": round(diff_pct, 2) if isinstance(diff_pct, float) else diff_pct
+            })
+
+    df = pd.DataFrame(rows)
+    df.to_csv(output_path, index=False)
+    print(f"Comparison CSV saved to: {output_path}")
+
+
+def save_raw_results_csv(results: list[dict], output_path: str):
+    """Save raw benchmark results to CSV."""
+    df = pd.DataFrame(results)
+    df.to_csv(output_path, index=False)
+    print(f"Raw results CSV saved to: {output_path}")
+
+
 def create_summary_report(data: dict, output_path: str):
     """Create a markdown summary report."""
     results = data["results"]
@@ -302,9 +384,20 @@ def main():
     # Generate summary report
     create_summary_report(data, f"{RESULTS_DIR}/summary_{timestamp}.md")
 
+    # Generate CSV files
+    print("\nGenerating CSV files...")
+    save_raw_results_csv(results, f"{RESULTS_DIR}/results_raw_{timestamp}.csv")
+    save_comparison_csv(results, f"{RESULTS_DIR}/results_comparison_{timestamp}.csv")
+
     print("\n" + "=" * 60)
     print("Analysis complete!")
     print("=" * 60)
+    print(f"\nOutput files in {RESULTS_DIR}/:")
+    print(f"  - results_raw_{timestamp}.csv        (raw benchmark data)")
+    print(f"  - results_comparison_{timestamp}.csv (side-by-side comparison)")
+    print(f"  - summary_{timestamp}.md             (markdown report)")
+    print(f"  - latency_comparison_{timestamp}.png (latency chart)")
+    print(f"  - throughput_comparison_{timestamp}.png (throughput chart)")
 
 
 if __name__ == "__main__":
